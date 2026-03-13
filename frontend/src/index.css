@@ -1,0 +1,107 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Base Styles ─────────────────────────────────────── */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background-color: #FFF2E1;
+    color: #3A3A3A;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Scrollbar ───────────────────────────────────────── */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #FFF2E1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #A79277;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #8C6F56;
+}
+
+/* ── Utility Classes ─────────────────────────────────── */
+@layer components {
+    .glass-card {
+        @apply bg-white/70 backdrop-blur-md rounded-2xl shadow-glass border border-white/30;
+    }
+
+    .glass-card-solid {
+        @apply bg-white rounded-2xl shadow-card border border-accent/10;
+    }
+
+    .btn-primary {
+        @apply px-6 py-3 bg-accent text-white font-semibold rounded-xl hover:bg-hover transition-all duration-300 shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md;
+    }
+
+    .btn-secondary {
+        @apply px-6 py-3 bg-white text-accent font-semibold rounded-xl border-2 border-accent hover:bg-accent hover:text-white transition-all duration-300;
+    }
+
+    .section-heading {
+        @apply font-display text-3xl md:text-4xl font-bold text-dark;
+    }
+
+    .gradient-text {
+        @apply bg-clip-text text-transparent bg-gradient-to-r from-accent to-hover;
+    }
+
+    .input-box {
+        @apply w-full px-4 py-3 rounded-xl border-2 border-accent/20 bg-white/50 text-dark placeholder-accent/40 focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none transition-all duration-300;
+    }
+}
+
+/* ── Animations ──────────────────────────────────────── */
+@keyframes gradient-shift {
+
+    0%,
+    100% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+}
+
+.animate-gradient {
+    background-size: 200% 200%;
+    animation: gradient-shift 8s ease infinite;
+}
+
+/* ── Plagiarism Highlight ────────────────────────────── */
+.plagiarized-highlight {
+    background: linear-gradient(120deg, rgba(231, 76, 60, 0.15) 0%, rgba(231, 76, 60, 0.25) 100%);
+    border-left: 3px solid #E74C3C;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.plagiarized-highlight:hover {
+    background: linear-gradient(120deg, rgba(231, 76, 60, 0.25) 0%, rgba(231, 76, 60, 0.35) 100%);
+}
+
+.clean-highlight {
+    background: linear-gradient(120deg, rgba(39, 174, 96, 0.1) 0%, rgba(39, 174, 96, 0.15) 100%);
+    border-left: 3px solid #27AE60;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
