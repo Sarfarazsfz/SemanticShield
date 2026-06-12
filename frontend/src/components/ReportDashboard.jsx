@@ -10,14 +10,17 @@ import ErrorBoundary from './ErrorBoundary';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 
-export default function ReportDashboard() {
+export default function ReportDashboard({ result: resultProp }) {
     const [result, setResult] = useState(null);
     const [stage, setStage] = useState(0); // For progressive reveal
 
     useEffect(() => {
-        const stored = sessionStorage.getItem('lastResult');
+        const stored = resultProp ?? (() => {
+            const s = sessionStorage.getItem('lastResult');
+            return s ? JSON.parse(s) : null;
+        })();
         if (stored) {
-            setResult(JSON.parse(stored));
+            setResult(stored);
 
             // Progressive reveal stages
             setTimeout(() => setStage(1), 300); // Cards
@@ -53,9 +56,15 @@ export default function ReportDashboard() {
                             <Chart2 size={32} color="#A79277" variant="Bulk" />
                             Analysis Report
                         </h2>
-                        <p className="text-dark/50 mt-1">
-                            Detailed breakdown of semantic similarity and potential plagiarism.
-                        </p>
+                        <div className="flex items-center gap-3 mt-1">
+                            <p className="text-dark/50">
+                                Detailed breakdown of semantic similarity, plagiarism, and AI-generated content.
+                            </p>
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-accent/10 text-accent-dark border border-accent/20">
+                                <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+                                Single Document Mode
+                            </span>
+                        </div>
                     </div>
                     <div className="flex gap-3 no-print items-center">
                         <div className="hidden sm:flex bg-white px-4 py-2 rounded-xl shadow-sm border border-accent/10">

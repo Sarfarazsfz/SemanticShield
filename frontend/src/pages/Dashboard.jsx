@@ -20,7 +20,11 @@ export default function Dashboard() {
     const [scanStep, setScanStep] = useState(0);
     const navigate = useNavigate();
 
-    const handleAnalyze = async (sourceText, checkText) => {
+    /**
+     * handleAnalyze — called by UploadBox with the single document text.
+     * Posts to /plagiarism-check using the new { document_text } schema.
+     */
+    const handleAnalyze = async (documentText) => {
         setLoading(true);
         setError(null);
         setScanStep(0);
@@ -31,9 +35,8 @@ export default function Dashboard() {
         }, 1000);
 
         try {
-            const response = await axios.post(`${API_URL}/analyze`, {
-                source_text: sourceText,
-                target_text: checkText
+            const response = await axios.post(`${API_URL}/plagiarism-check`, {
+                document_text: documentText,
             });
 
             console.log("Server response:", response.data);
@@ -52,7 +55,7 @@ export default function Dashboard() {
         } catch (err) {
             clearInterval(interval);
             console.error('Analysis failed:', err);
-            setError(err.response?.data?.error || "Analysis failed");
+            setError(err.response?.data?.error || "Analysis failed. Please try again.");
             setLoading(false);
         }
     };
@@ -93,7 +96,7 @@ export default function Dashboard() {
 
                             <h3 className="font-display text-2xl font-bold text-dark mb-3">Analyzing</h3>
 
-                            <div className="h-6 relative relative overflow-hidden">
+                            <div className="h-6 relative overflow-hidden">
                                 <AnimatePresence mode="wait">
                                     <motion.p
                                         key={scanStep}
@@ -111,7 +114,7 @@ export default function Dashboard() {
                 )}
             </AnimatePresence>
 
-            <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
                 {/* Header */}
                 <div className="mb-10 text-center">
                     <h1 className="font-display text-4xl font-bold text-dark flex items-center justify-center gap-3">
@@ -119,7 +122,7 @@ export default function Dashboard() {
                         Analysis Dashboard
                     </h1>
                     <p className="text-dark/50 mt-3 text-lg">
-                        Upload your assignment and reference documents for full semantic plagiarism checks.
+                        Upload your paper to check for plagiarism and AI-generated content.
                     </p>
                 </div>
 

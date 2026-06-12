@@ -7,15 +7,11 @@ import ReportDashboard from '@/components/ReportDashboard';
 
 export default function Report() {
     const [result, setResult] = useState(null);
-    const [sourceText, setSourceText] = useState('');
-    const [checkText, setCheckText] = useState('');
 
     useEffect(() => {
         const saved = sessionStorage.getItem('lastResult');
         if (saved) {
             setResult(JSON.parse(saved));
-            setSourceText(sessionStorage.getItem('sourceText') || '');
-            setCheckText(sessionStorage.getItem('checkText') || '');
         }
     }, []);
 
@@ -29,7 +25,7 @@ export default function Report() {
                         </div>
                         <h2 className="font-display text-2xl font-bold text-dark mb-2">No Report Available</h2>
                         <p className="text-dark/50 mb-6">
-                            Run an analysis on the Dashboard first to generate a plagiarism report.
+                            Run a plagiarism check on the Dashboard first to generate a report.
                         </p>
                         <Link to="/dashboard">
                             <Button className="gap-2">
@@ -46,7 +42,7 @@ export default function Report() {
     return (
         <div className="min-h-screen py-8">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <ReportDashboard result={result} sourceText={sourceText} checkText={checkText} />
+                <ReportDashboard result={result} />
             </div>
         </div>
     );

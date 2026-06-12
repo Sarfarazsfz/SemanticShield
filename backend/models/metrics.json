@@ -1,0 +1,82 @@
+{
+  "accuracy": 0.943,
+  "precision": 0.9451,
+  "recall": 0.943,
+  "f1": 0.9429,
+  "roc_auc": 0.9936,
+  "confusion_matrix": [
+    [
+      1000,
+      0,
+      0
+    ],
+    [
+      0,
+      871,
+      129
+    ],
+    [
+      0,
+      42,
+      958
+    ]
+  ],
+  "class_names": [
+    "Original",
+    "Paraphrased",
+    "Plagiarized"
+  ],
+  "cv_accuracy_mean": 0.9459,
+  "cv_accuracy_std": 0.0023,
+  "cv_fold_scores": [
+    0.9483,
+    0.9437,
+    0.9483,
+    0.943,
+    0.9463
+  ],
+  "feature_importances": {
+    "bigram_overlap": 0.2139,
+    "word_overlap": 0.206,
+    "trigram_overlap": 0.192,
+    "tfidf_cosine": 0.1452,
+    "jaccard": 0.1402,
+    "length_ratio": 0.068,
+    "char_overlap": 0.0347,
+    "embedding_cosine": 0.0
+  },
+  "training_samples": 12000,
+  "test_samples": 3000,
+  "total_samples": 15000,
+  "feature_count": 8,
+  "feature_names": [
+    "tfidf_cosine",
+    "jaccard",
+    "word_overlap",
+    "char_overlap",
+    "length_ratio",
+    "bigram_overlap",
+    "trigram_overlap",
+    "embedding_cosine"
+  ],
+  "training_time_seconds": 2.69,
+  "feature_extraction_time_seconds": 77.75,
+  "per_class": {
+    "Original": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "Paraphrased": {
+      "precision": 0.954,
+      "recall": 0.871,
+      "f1": 0.9106
+    },
+    "Plagiarized": {
+      "precision": 0.8813,
+      "recall": 0.958,
+      "f1": 0.9181
+    }
+  },
+  "evaluated_at": "2026-06-12T20:19:04.975879"
+}

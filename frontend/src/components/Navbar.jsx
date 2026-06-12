@@ -10,6 +10,7 @@ export default function Navbar() {
     const navLinks = [
         { path: '/', label: 'Home' },
         { path: '/dashboard', label: 'Dashboard' },
+        { path: '/model', label: 'Model' },
         { path: '/report', label: 'Report' },
     ];
 

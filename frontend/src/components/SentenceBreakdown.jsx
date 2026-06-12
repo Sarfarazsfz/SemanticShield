@@ -9,6 +9,12 @@ const getRowStyle = (similarity) => {
     return { bg: '', border: 'border-transparent', status: 'Original', variant: 'success' };
 };
 
+const classVariant = (label) => {
+    if (label === 'Original') return 'success';
+    if (label === 'Paraphrased') return 'warning';
+    return 'danger';
+};
+
 export default function SentenceBreakdown({ result, delay = 0 }) {
     if (!result?.plagiarized_sentences && !result?.heatmap_data) return null;
 
@@ -33,6 +39,13 @@ export default function SentenceBreakdown({ result, delay = 0 }) {
     // Sort by similarity descending
     sentences.sort((a, b) => b.similarity - a.similarity);
 
+    // Check if ML classification data is available
+    const hasClassification = sentences.some((s) => s.classification);
+
+    const gridCols = hasClassification
+        ? 'grid-cols-[1fr_100px_160px_90px_140px]'
+        : 'grid-cols-[1fr_100px_160px_90px]';
+
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -54,11 +67,12 @@ export default function SentenceBreakdown({ result, delay = 0 }) {
                     </div>
 
                     {/* Table Header */}
-                    <div className="grid grid-cols-[1fr_100px_160px_90px] gap-4 px-4 py-2 text-[11px] font-semibold text-dark/40 uppercase tracking-wide border-b border-accent/10">
+                    <div className={`grid ${gridCols} gap-4 px-4 py-2 text-[11px] font-semibold text-dark/40 uppercase tracking-wide border-b border-accent/10`}>
                         <span>Sentence</span>
                         <span className="text-center">Similarity</span>
                         <span className="text-center">Matched Source</span>
                         <span className="text-center">Status</span>
+                        {hasClassification && <span className="text-center">Classification</span>}
                     </div>
 
                     {/* Table Rows */}
@@ -71,7 +85,7 @@ export default function SentenceBreakdown({ result, delay = 0 }) {
                                     initial={{ opacity: 0, x: -10 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     transition={{ duration: 0.3, delay: delay + i * 0.03 }}
-                                    className={`grid grid-cols-[1fr_100px_160px_90px] gap-4 px-4 py-3 items-center ${style.bg} border-l-2 ${style.border} transition-colors hover:bg-accent/[0.03]`}
+                                    className={`grid ${gridCols} gap-4 px-4 py-3 items-center ${style.bg} border-l-2 ${style.border} transition-colors hover:bg-accent/[0.03]`}
                                 >
                                     <div className="text-sm text-dark leading-relaxed group">
                                         <p className="line-clamp-2 group-hover:line-clamp-none transition-all">
@@ -95,6 +109,16 @@ export default function SentenceBreakdown({ result, delay = 0 }) {
                                             {style.status}
                                         </Badge>
                                     </div>
+                                    {hasClassification && (
+                                        <div className="text-center flex items-center justify-center gap-1.5">
+                                            <Badge variant={classVariant(s.classification)} className="text-[10px]">
+                                                {s.classification}
+                                            </Badge>
+                                            {s.confidence != null && (
+                                                <span className="text-[10px] text-dark/40 font-medium">{s.confidence}%</span>
+                                            )}
+                                        </div>
+                                    )}
                                 </motion.div>
                             );
                         })}
@@ -113,3 +137,4 @@ export default function SentenceBreakdown({ result, delay = 0 }) {
         </motion.div>
     );
 }
+

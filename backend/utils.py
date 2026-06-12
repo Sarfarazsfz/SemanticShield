@@ -4,6 +4,7 @@ Handles text cleaning, sentence splitting, and section extraction.
 """
 
 import re
+import os
 from typing import List, Dict
 
 
@@ -159,3 +160,33 @@ def parse_documents_from_text(text: str) -> Dict[str, str]:
             documents[filename] = content
             
     return documents
+
+
+def load_reference_corpus(ref_dir: str) -> Dict[str, str]:
+    """
+    Load all reference documents from a directory into a {filename: text} dict.
+    Supports .txt, .pdf, and .docx files.
+    Silently skips unreadable files so the system degrades gracefully.
+    """
+    corpus: Dict[str, str] = {}
+
+    if not os.path.isdir(ref_dir):
+        return corpus
+
+    for fname in os.listdir(ref_dir):
+        fpath = os.path.join(ref_dir, fname)
+        if not os.path.isfile(fpath):
+            continue
+        ext = fname.lower().rsplit('.', 1)[-1] if '.' in fname else ''
+        if ext not in ('txt', 'pdf', 'docx'):
+            continue
+        try:
+            with open(fpath, 'rb') as fh:
+                raw = fh.read()
+            text = extract_text_from_file(raw, fname)
+            if text.strip():
+                corpus[fname] = text.strip()
+        except Exception as e:
+            print(f"[load_reference_corpus] Skipping {fname}: {e}")
+
+    return corpus

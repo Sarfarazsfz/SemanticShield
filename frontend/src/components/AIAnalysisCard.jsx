@@ -23,13 +23,13 @@ export default function AIAnalysisCard({ result, delay = 0 }) {
     // Summary text
     const summaryLines = [];
     if (score >= 60) {
-        summaryLines.push('SemanticShield detected high semantic similarity between the uploaded documents.');
-        summaryLines.push('The second document appears to paraphrase multiple sentences from the original source.');
+        summaryLines.push('SemanticShield detected high semantic similarity between the uploaded document and the reference corpus.');
+        summaryLines.push('Multiple sentences appear to be copied or closely paraphrased from one or more reference sources.');
     } else if (score >= 30) {
-        summaryLines.push('Moderate similarity detected between the documents.');
-        summaryLines.push('Some sentences share semantic overlap with the source material.');
+        summaryLines.push('Moderate similarity detected between the uploaded document and the reference corpus.');
+        summaryLines.push('Some sentences share semantic overlap with reference material — review flagged sections below.');
     } else {
-        summaryLines.push('Low similarity detected. The documents appear largely original.');
+        summaryLines.push('Low similarity detected. The uploaded document appears largely original.');
     }
     if (aiProb > 50) {
         summaryLines.push('AI-generated patterns were also detected based on repetitive structure and uniform sentence complexity.');
