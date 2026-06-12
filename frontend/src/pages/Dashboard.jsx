@@ -35,9 +35,12 @@ export default function Dashboard() {
         }, 1000);
 
         try {
-            const response = await axios.post(`${API_URL}/plagiarism-check`, {
+            const response = await axios.post(
+                `${API_URL.replace(/\/$/, "")}/plagiarism-check`,
+                {
                 document_text: documentText,
-            });
+                }
+            );
 
             console.log("Server response:", response.data);
 
