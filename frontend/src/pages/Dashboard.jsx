@@ -5,7 +5,7 @@ import { ClipboardText, Scan } from 'iconsax-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import UploadBox from '../components/UploadBox';
 
-const API_URL = 'http://localhost:8000';
+const API_URL = import.meta.env.VITE_API_URL;
 
 const STEPS = [
     "Extracting document text...",
