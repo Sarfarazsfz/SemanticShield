@@ -8,15 +8,31 @@ Falls back to TF-IDF heuristic when no trained model is available.
 import os
 import json
 import pickle
-import numpy as np
+import sys
 from typing import Dict, List, Any, Optional, Tuple
 
-import sys
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from app.feature_extractor import extract_features, extract_features_batch, FEATURE_NAMES
+import numpy as np
 
-# ── Paths ─────────────────────────────────────────────────────────
 _BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+if _BASE_DIR not in sys.path:
+    sys.path.insert(0, _BASE_DIR)
+
+# Robust import path: works whether feature_extractor sits under app/ or backend/
+try:
+    from app.feature_extractor import (
+        extract_features,
+        extract_features_batch,
+        FEATURE_NAMES,
+        tfidf_cosine_similarity,
+    )
+except ImportError:
+    from feature_extractor import (
+        extract_features,
+        extract_features_batch,
+        FEATURE_NAMES,
+        tfidf_cosine_similarity,
+    )
+
 MODEL_PATH = os.path.join(_BASE_DIR, "models", "plagiarism_model.pkl")
 METRICS_PATH = os.path.join(_BASE_DIR, "models", "metrics.json")
 
@@ -34,8 +50,6 @@ class MLEngine:
         self._metrics: Optional[Dict] = None
         self._loaded = False
 
-    # ── Model lifecycle ───────────────────────────────────────────
-
     def is_model_available(self) -> bool:
         """Check if a trained model file exists on disk."""
         return os.path.isfile(MODEL_PATH)
@@ -44,12 +58,15 @@ class MLEngine:
         """Load the model from disk. Returns True on success."""
         if not self.is_model_available():
             return False
+
         try:
             with open(MODEL_PATH, "rb") as f:
                 self._model = pickle.load(f)
+
             self._loaded = True
             self._load_metrics()
             return True
+
         except Exception as e:
             print(f"[MLEngine] Failed to load model: {e}")
             self._model = None
@@ -77,12 +94,17 @@ class MLEngine:
             return True
         return self.load_model()
 
-    # ── Prediction ────────────────────────────────────────────────
-
     def predict_pair(self, text1: str, text2: str) -> Dict[str, Any]:
         """
         Classify a single text pair.
-        Returns: {label: int, classification: str, confidence: float, features: dict}
+        Returns:
+            {
+                label: int,
+                classification: str,
+                confidence: float,
+                probabilities: dict,
+                features: dict
+            }
         """
         if not self.ensure_loaded():
             return self._fallback_predict(text1, text2)
@@ -113,7 +135,7 @@ class MLEngine:
     ) -> List[Dict[str, Any]]:
         """
         Classify a batch of text pairs efficiently.
-        Uses batch embedding computation for speed.
+        Uses batch feature computation for speed.
         """
         if not pairs:
             return []
@@ -147,15 +169,11 @@ class MLEngine:
 
         return results
 
-    # ── Fallback (no model) ───────────────────────────────────────
-
     def _fallback_predict(self, text1: str, text2: str) -> Dict[str, Any]:
         """
         Heuristic classification when no trained model is available.
         Uses TF-IDF cosine similarity thresholds.
         """
-        from app.feature_extractor import tfidf_cosine_similarity
-
         sim = tfidf_cosine_similarity(text1, text2)
 
         if sim >= 0.8:
@@ -179,5 +197,4 @@ class MLEngine:
         }
 
 
-# ── Singleton instance ────────────────────────────────────────────
 engine = MLEngine()

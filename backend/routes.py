@@ -4,15 +4,15 @@ FastAPI endpoints for ML-powered plagiarism detection.
 Includes dataset training, evaluation, and single-document analysis.
 """
 
+import json
+import os
+import subprocess
+import sys
+from typing import List, Optional, Dict
+
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any
-import os
-import sys
-import json
-import subprocess
-import threading
 
 from similarity import detect_plagiarism, quick_similarity
 from utils import (
@@ -31,7 +31,6 @@ SCRIPTS_DIR = os.path.join(_BASE_DIR, "..", "scripts")
 MODELS_DIR = os.path.join(_BASE_DIR, "models")
 METRICS_PATH = os.path.join(MODELS_DIR, "metrics.json")
 
-
 # ── ML Engine (lazy singleton) ────────────────────────────────────
 _ml_engine = None
 
@@ -45,7 +44,6 @@ def _get_ml_engine():
 
 
 # ── Request / Response Models ──────────────────────────────────────
-
 class PlagiarismCheckRequest(BaseModel):
     document_text: str = Field(..., description="The document to check for plagiarism")
     threshold: Optional[float] = Field(
@@ -53,7 +51,6 @@ class PlagiarismCheckRequest(BaseModel):
     )
 
 
-# Legacy model kept for backward-compatibility with /analyze
 class AnalyzeRequest(BaseModel):
     source_text: str = Field(
         ..., description="Original/reference text containing all sources"
@@ -67,8 +64,6 @@ class AnalyzeRequest(BaseModel):
 
 
 # ── Helper functions ──────────────────────────────────────────────
-
-
 def _compute_ai_probability(similarity_score: float, total_sentences: int) -> float:
     """Heuristic AI-generated probability. Capped at 99."""
     return min(round(similarity_score * 0.87), 99)
@@ -97,9 +92,7 @@ def _build_matched_sources(plagiarized_sentences: List[Dict]) -> List[Dict]:
         sim = s.get("similarity", 0)
         if sim > source_map[src]["max_similarity"]:
             source_map[src]["max_similarity"] = sim
-    return sorted(
-        source_map.values(), key=lambda x: x["max_similarity"], reverse=True
-    )
+    return sorted(source_map.values(), key=lambda x: x["max_similarity"], reverse=True)
 
 
 def _load_metrics() -> Optional[Dict]:
@@ -114,8 +107,6 @@ def _load_metrics() -> Optional[Dict]:
 
 
 # ── Health ─────────────────────────────────────────────────────────
-
-
 @router.get("/health")
 async def health_check():
     """Health check endpoint."""
@@ -130,8 +121,6 @@ async def health_check():
 
 
 # ── File text extraction ───────────────────────────────────────────
-
-
 @router.post("/extract-text")
 async def extract_text(file: UploadFile = File(...)):
     """Extracts text from a single uploaded file (PDF, DOCX, TXT)."""
@@ -140,16 +129,12 @@ async def extract_text(file: UploadFile = File(...)):
         text = extract_text_from_file(content, file.filename)
         return {"text": text, "filename": file.filename}
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"File extraction failed: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"File extraction failed: {str(e)}")
 
 
 # ══════════════════════════════════════════════════════════════════
 #  ML PIPELINE ENDPOINTS
 # ══════════════════════════════════════════════════════════════════
-
-
 @router.post("/train")
 async def train_model():
     """
@@ -158,29 +143,27 @@ async def train_model():
       2. Extract features
       3. Train RandomForestClassifier
       4. Save model + metrics
-
-    This runs the scripts/train.py script in-process by importing it.
-    Returns the metrics on completion.
     """
-    dataset_path = os.path.join(_BASE_DIR, "data", "generated", "plagiarism_dataset.csv")
+    dataset_path = os.path.join(
+        _BASE_DIR, "data", "generated", "plagiarism_dataset.csv"
+    )
     if not os.path.isfile(dataset_path):
         return JSONResponse(
             status_code=400,
             content={
                 "error": "Dataset not found",
-                "details": "Run  python scripts/build_dataset.py  first to generate the training dataset.",
+                "details": "Run python scripts/build_dataset.py first to generate the training dataset.",
             },
         )
 
     try:
-        # Run training script as subprocess so it doesn't block the event loop
         script_path = os.path.join(SCRIPTS_DIR, "train.py")
         result = subprocess.run(
             [sys.executable, script_path],
             cwd=_BASE_DIR,
             capture_output=True,
             text=True,
-            timeout=600,  # 10 min timeout
+            timeout=600,
         )
 
         if result.returncode != 0:
@@ -193,11 +176,10 @@ async def train_model():
                 },
             )
 
-        # Reload model in engine
         engine = _get_ml_engine()
         engine.load_model()
-
         metrics = _load_metrics()
+
         return {
             "status": "success",
             "message": "Model trained successfully",
@@ -208,7 +190,10 @@ async def train_model():
     except subprocess.TimeoutExpired:
         return JSONResponse(
             status_code=504,
-            content={"error": "Training timed out", "details": "Training exceeded the 10-minute limit."},
+            content={
+                "error": "Training timed out",
+                "details": "Training exceeded the 10-minute limit.",
+            },
         )
     except Exception as e:
         return JSONResponse(
@@ -219,9 +204,7 @@ async def train_model():
 
 @router.post("/evaluate")
 async def evaluate_model():
-    """
-    Run model evaluation and return metrics + confusion matrix.
-    """
+    """Run model evaluation and return metrics + confusion matrix."""
     model_path = os.path.join(MODELS_DIR, "plagiarism_model.pkl")
     if not os.path.isfile(model_path):
         return JSONResponse(
@@ -272,7 +255,10 @@ async def get_model_metrics():
     if metrics is None:
         return JSONResponse(
             status_code=404,
-            content={"error": "No metrics found", "details": "Train and evaluate the model first."},
+            content={
+                "error": "No metrics found",
+                "details": "Train and evaluate the model first.",
+            },
         )
     engine = _get_ml_engine()
     return {
@@ -284,21 +270,10 @@ async def get_model_metrics():
 # ══════════════════════════════════════════════════════════════════
 #  PRIMARY PLAGIARISM CHECK (ML-Powered)
 # ══════════════════════════════════════════════════════════════════
-
-
 @router.post("/plagiarism-check")
 async def plagiarism_check(request: PlagiarismCheckRequest):
     """
     Single-document plagiarism & AI-content analysis.
-
-    Pipeline:
-      1. Load reference corpus from backend/reference_docs/
-      2. TF-IDF plagiarism detection (baseline)
-      3. ML model prediction per sentence (if model is trained)
-      4. AI-generated content heuristic
-      5. Report generation
-
-    Falls back to TF-IDF only if no trained model is available.
     """
     if not request.document_text or len(request.document_text.strip()) < 10:
         return JSONResponse(
@@ -309,18 +284,19 @@ async def plagiarism_check(request: PlagiarismCheckRequest):
             },
         )
 
-    # ── 1. Load reference corpus ───────────────────────────────────
     sources_dict = load_reference_corpus(REFERENCE_DOCS_DIR)
 
     if not sources_dict:
         return {
             "plagiarism_score": 0.0,
+            "average_similarity": 0.0,
             "semantic_similarity": 0.0,
             "ai_generated_probability": 0.0,
             "confidence_level": "Low",
             "flagged_sentences": [],
             "section_analysis": [],
             "matched_sources": [],
+            "all_sentences_classified": [],
             "total_sentences_checked": 0,
             "total_source_sentences": 0,
             "flagged_count": 0,
@@ -330,6 +306,9 @@ async def plagiarism_check(request: PlagiarismCheckRequest):
             "source_stats": {},
             "check_stats": {},
             "warning": "No reference documents found in backend/reference_docs/.",
+            "plagiarism_detected": False,
+            "plagiarism_type": "ML + Semantic Plagiarism Detection",
+            "is_plagiarism_only": False,
         }
 
     try:
@@ -342,24 +321,22 @@ async def plagiarism_check(request: PlagiarismCheckRequest):
 
         plagiarized = result.get("plagiarized_sentences", [])
         total_checked = result.get("total_sentences_checked", 0)
-        similarity_score = result.get("similarity_score", 0.0)
+
+        plagiarism_score = result.get("plagiarism_score", 0.0)
+        average_similarity = result.get("average_similarity", 0.0)
 
         # ── 3. ML model classification per sentence ───────────────
         engine = _get_ml_engine()
         model_metrics = engine.get_metrics()
 
-        # Build per-sentence ML predictions
         doc_sentences = preprocess_text(request.document_text)
 
-        # Flatten reference sentences for pairing
         ref_sentences = []
         for _, text in sources_dict.items():
             ref_sentences.extend(preprocess_text(text))
 
         ml_predictions = {}
         if engine.ensure_loaded() and doc_sentences and ref_sentences:
-            # For each document sentence, pair it with its best TF-IDF match
-            # from the heatmap data to get a single pair for ML classification
             import numpy as np
             from sklearn.feature_extraction.text import TfidfVectorizer
             from sklearn.metrics.pairwise import cosine_similarity as sk_cos
@@ -384,11 +361,10 @@ async def plagiarism_check(request: PlagiarismCheckRequest):
             except Exception as e:
                 print(f"[routes] ML prediction failed, using baseline: {e}")
 
-        # ── 4. AI probability & confidence ────────────────────────
-        ai_prob = _compute_ai_probability(similarity_score, total_checked)
+        # Use semantic overlap for AI heuristic
+        ai_prob = _compute_ai_probability(average_similarity, total_checked)
         confidence = _compute_confidence_level(total_checked)
 
-        # ── 5. Build response ──────────────────────────────────────
         flagged_sentences = []
         for s in plagiarized:
             idx = s.get("index", 0)
@@ -402,7 +378,6 @@ async def plagiarism_check(request: PlagiarismCheckRequest):
                 "matched_source_text": s.get("matched_source_text"),
             }
 
-            # Add ML classification if available
             if ml_pred:
                 entry["classification"] = ml_pred.get("classification", "Unknown")
                 entry["classification_confidence"] = ml_pred.get("confidence", 0.0)
@@ -410,11 +385,9 @@ async def plagiarism_check(request: PlagiarismCheckRequest):
 
             flagged_sentences.append(entry)
 
-        # Also build full sentence list with ML classifications
         all_sentences_classified = []
         for i, sent in enumerate(doc_sentences):
             ml_pred = ml_predictions.get(i, {})
-            # Find if this sentence is in the flagged list
             hm = result.get("heatmap_data", [])
             max_sim = 0.0
             if i < len(hm):
@@ -432,8 +405,6 @@ async def plagiarism_check(request: PlagiarismCheckRequest):
 
         matched_sources = _build_matched_sources(plagiarized)
 
-        # Enrich legacy plagiarized_sentences with ML classification
-        # so SentenceBreakdown can display them
         for s in plagiarized:
             idx = s.get("index", 0)
             ml_pred = ml_predictions.get(idx, {})
@@ -442,17 +413,16 @@ async def plagiarism_check(request: PlagiarismCheckRequest):
                 s["confidence"] = round(ml_pred.get("confidence", 0.0) * 100, 1)
 
         response = {
-            # New canonical fields
-            "plagiarism_score": similarity_score,
-            "semantic_similarity": round(similarity_score / 100, 4),
+            "plagiarism_score": plagiarism_score,
+            "average_similarity": average_similarity,
+            "semantic_similarity": round(average_similarity / 100, 4),
             "ai_generated_probability": ai_prob,
             "confidence_level": confidence,
             "flagged_sentences": flagged_sentences,
             "section_analysis": result.get("section_analysis", []),
             "matched_sources": matched_sources,
             "all_sentences_classified": all_sentences_classified,
-            # Legacy fields for report components
-            "similarity_score": similarity_score,
+            "similarity_score": plagiarism_score,  # legacy alias
             "plagiarized_sentences": plagiarized,
             "total_sentences_checked": total_checked,
             "total_source_sentences": result.get("total_source_sentences", 0),
@@ -462,9 +432,9 @@ async def plagiarism_check(request: PlagiarismCheckRequest):
             "check_stats": result.get("check_stats", {}),
             "plagiarism_type": "ML + Semantic Plagiarism Detection",
             "is_plagiarism_only": False,
+            "plagiarism_detected": result.get("plagiarism_detected", False),
         }
 
-        # Add model metrics if available
         if model_metrics:
             response["model_metrics"] = {
                 "accuracy": model_metrics.get("accuracy"),
@@ -490,8 +460,6 @@ async def plagiarism_check(request: PlagiarismCheckRequest):
 # ══════════════════════════════════════════════════════════════════
 #  LEGACY ENDPOINTS (backward-compat)
 # ══════════════════════════════════════════════════════════════════
-
-
 @router.post("/analyze")
 async def analyze_documents(request: AnalyzeRequest):
     """Legacy full-analysis endpoint (two-document comparison)."""

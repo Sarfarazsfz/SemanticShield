@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import UploadBox from '../components/UploadBox';
 
 const API_URL = import.meta.env.VITE_API_URL;
+console.log("API URL =", API_URL);
 
 const STEPS = [
     "Extracting document text...",
@@ -24,44 +25,73 @@ export default function Dashboard() {
      * handleAnalyze — called by UploadBox with the single document text.
      * Posts to /plagiarism-check using the new { document_text } schema.
      */
-    const handleAnalyze = async (documentText) => {
-        setLoading(true);
-        setError(null);
-        setScanStep(0);
 
-        // Sequence animation intervals
-        const interval = setInterval(() => {
-            setScanStep(prev => (prev < 3 ? prev + 1 : prev));
-        }, 1000);
+const handleAnalyze = async (documentText) => {
 
-        try {
-            const response = await axios.post(
-                `${API_URL.replace(/\/$/, "")}/plagiarism-check`,
-                {
+    // Purana result hata do
+    sessionStorage.removeItem("lastResult");
+
+    setLoading(true);
+    setError(null);
+    setScanStep(0);
+
+    const interval = setInterval(() => {
+        setScanStep(prev => (prev < 3 ? prev + 1 : prev));
+    }, 1000);
+
+    try {
+
+        console.log("========== DEBUG ==========");
+        console.log("API URL =", API_URL);
+
+        const finalUrl =
+            `${API_URL.replace(/\/$/, "")}/plagiarism-check`;
+
+        console.log("REQUEST URL =", finalUrl);
+        console.log("DOCUMENT LENGTH =", documentText.length);
+
+        const response = await axios.post(
+            finalUrl,
+            {
                 document_text: documentText,
-                }
-            );
+            }
+        );
 
-            console.log("Server response:", response.data);
+        console.log("RESPONSE RECEIVED");
+        console.log(response.data);
 
-            // Store result for Report page
-            sessionStorage.setItem('lastResult', JSON.stringify(response.data));
+        // Fresh result save karo
+        sessionStorage.setItem(
+            "lastResult",
+            JSON.stringify(response.data)
+        );
 
-            clearInterval(interval);
-            setScanStep(3);
+        clearInterval(interval);
 
-            // Auto redirect to report
-            setTimeout(() => {
-                navigate('/report');
-            }, 800);
+        setScanStep(3);
 
-        } catch (err) {
-            clearInterval(interval);
-            console.error('Analysis failed:', err);
-            setError(err.response?.data?.error || "Analysis failed. Please try again.");
-            setLoading(false);
-        }
-    };
+        setTimeout(() => {
+            navigate("/report");
+        }, 800);
+
+    } catch (err) {
+
+        // Error par old result delete
+        sessionStorage.removeItem("lastResult");
+
+        clearInterval(interval);
+
+        console.error("Analysis failed:", err);
+
+        setError(
+            err.response?.data?.error ||
+            err.message ||
+            "Analysis failed. Please try again."
+        );
+
+        setLoading(false);
+    }
+};
 
     return (
         <div className="min-h-screen py-12 relative">
